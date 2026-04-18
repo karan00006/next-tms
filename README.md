@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notes Vault (Next.js Migration)
 
-## Getting Started
+This folder contains the migrated version of your PHP project, keeping the same MySQL database tables and core behavior while improving security, structure, and UI/UX.
 
-First, run the development server:
+## Migrated Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Register and login with role support (user/admin)
+- Secure logout using HttpOnly cookies
+- Forgot password with OTP verification and expiry
+- New password flow via short-lived reset token
+- Notes CRUD for users
+- Admin dashboard with stats
+- Admin user management (toggle role, delete user)
+- Admin note comments
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js 16 App Router (TypeScript)
+- mysql2 for database access
+- jose for JWT cookies
+- bcryptjs for password and OTP hashing
+- zod for request validation
+- nodemailer for OTP emails
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Setup
 
-## Learn More
+1. Copy .env.example to .env.local
+2. Fill in real values for database, JWT secret, and SMTP
 
-To learn more about Next.js, take a look at the following resources:
+Required env vars:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- DATABASE_URL
+- JWT_SECRET
+- ADMIN_REGISTRATION_CODE
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Optional for OTP email delivery:
 
-## Deploy on Vercel
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USER
+- SMTP_PASS
+- SMTP_FROM
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Database Compatibility
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This app reuses the same existing tables from PHP:
+
+- students
+- crud_app
+
+And also reuses existing reset columns in students:
+
+- otp
+- attemtps
+- expiry
+
+## Run
+
+- npm install
+- npm run dev
+
+Open http://localhost:3000
+
+## Quality Checks
+
+- npm run lint
+- npm run build
+
+Both are passing in this migration.
