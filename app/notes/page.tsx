@@ -6,7 +6,7 @@ import { NotesClient } from "./notes-client";
 export default async function NotesPage() {
   const user = await requireUser();
 
-  const [rows] = await pool.query("SELECT * FROM crud_app WHERE user_id = ? ORDER BY created_at DESC", [
+  const [rows] = await pool.query("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC", [
     user.userId,
   ]);
 

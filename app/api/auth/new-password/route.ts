@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   await pool.execute(
-    "UPDATE students SET password = ?, otp = NULL, expiry = NULL, attemtps = 0 WHERE email = ?",
+    "UPDATE `user` SET password = ?, otp = NULL, expiry = NULL, attemtps = 0 WHERE email = ?",
     [hashedPassword, resetPayload.email],
   );
 

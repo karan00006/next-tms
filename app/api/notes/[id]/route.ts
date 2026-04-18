@@ -6,7 +6,7 @@ import { pool, type DbNote } from "@/lib/db";
 type Params = { params: Promise<{ id: string }> };
 
 async function getNote(id: number) {
-  const [rows] = await pool.query("SELECT * FROM crud_app WHERE ID = ? LIMIT 1", [id]);
+  const [rows] = await pool.query("SELECT * FROM tasks WHERE ID = ? LIMIT 1", [id]);
   return (rows as DbNote[])[0] || null;
 }
 
@@ -62,7 +62,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const { task, description, status } = parsed.data;
-  await pool.execute("UPDATE crud_app SET task = ?, description = ?, status = ? WHERE ID = ?", [
+  await pool.execute("UPDATE tasks SET task = ?, description = ?, status = ? WHERE ID = ?", [
     task,
     description,
     status,
@@ -93,6 +93,6 @@ export async function DELETE(_: Request, { params }: Params) {
     return forbidden();
   }
 
-  await pool.execute("DELETE FROM crud_app WHERE ID = ?", [noteId]);
+  await pool.execute("DELETE FROM tasks WHERE ID = ?", [noteId]);
   return ok({ message: "Note deleted" });
 }

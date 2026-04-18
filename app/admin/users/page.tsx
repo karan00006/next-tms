@@ -6,7 +6,7 @@ import { UsersClient } from "./users-client";
 export default async function AdminUsersPage() {
   const admin = await requireAdmin();
   const [rows] = await pool.query(
-    "SELECT s.id, s.name, s.email, s.is_admin, COUNT(c.ID) AS notes_count FROM students s LEFT JOIN crud_app c ON c.user_id = s.id GROUP BY s.id, s.name, s.email, s.is_admin ORDER BY s.id DESC",
+    "SELECT s.id, s.name, s.email, s.is_admin, COUNT(c.ID) AS notes_count FROM `user` s LEFT JOIN tasks c ON c.user_id = s.id GROUP BY s.id, s.name, s.email, s.is_admin ORDER BY s.id DESC",
   );
 
   return (

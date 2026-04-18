@@ -23,14 +23,14 @@ export async function POST(request: Request) {
     return badRequest("You cannot change your own admin role");
   }
 
-  const [rows] = await pool.query("SELECT is_admin FROM students WHERE id = ? LIMIT 1", [targetUserId]);
+  const [rows] = await pool.query("SELECT is_admin FROM `user` WHERE id = ? LIMIT 1", [targetUserId]);
   const target = (rows as Array<{ is_admin: number }>)[0];
   if (!target) {
     return badRequest("User not found");
   }
 
   const newRole = target.is_admin ? 0 : 1;
-  await pool.execute("UPDATE students SET is_admin = ? WHERE id = ?", [newRole, targetUserId]);
+  await pool.execute("UPDATE `user` SET is_admin = ? WHERE id = ?", [newRole, targetUserId]);
 
   return ok({ message: newRole ? "User promoted to admin" : "Admin demoted to user" });
 }

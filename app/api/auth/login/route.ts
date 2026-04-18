@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   const { email, password } = parsed.data;
-  const [rows] = await pool.query("SELECT * FROM students WHERE email = ? LIMIT 1", [email]);
+  const [rows] = await pool.query("SELECT * FROM `user` WHERE email = ? LIMIT 1", [email]);
   const users = rows as DbUser[];
   const user = users[0];
 

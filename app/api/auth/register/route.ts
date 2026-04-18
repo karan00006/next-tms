@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.execute(
-      "INSERT INTO students (name, email, password, is_admin) VALUES (?, ?, ?, ?)",
+      "INSERT INTO `user` (name, email, password, is_admin) VALUES (?, ?, ?, ?)",
       [name, email, hashedPassword, isAdmin],
     );
 

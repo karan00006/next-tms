@@ -15,7 +15,7 @@ export default async function NoteDetailPage({ params }: Props) {
     notFound();
   }
 
-  const [rows] = await pool.query("SELECT * FROM crud_app WHERE ID = ? LIMIT 1", [noteId]);
+  const [rows] = await pool.query("SELECT * FROM tasks WHERE ID = ? LIMIT 1", [noteId]);
   const note = (rows as DbNote[])[0];
 
   if (!note) {

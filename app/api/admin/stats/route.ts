@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   const [rows] = await pool.query(
-    "SELECT (SELECT COUNT(*) FROM crud_app) AS total_notes, (SELECT COUNT(*) FROM students) AS total_users, (SELECT COUNT(*) FROM students WHERE is_admin = 1) AS total_admins",
+    "SELECT (SELECT COUNT(*) FROM tasks) AS total_notes, (SELECT COUNT(*) FROM `user`) AS total_users, (SELECT COUNT(*) FROM `user` WHERE is_admin = 1) AS total_admins",
   );
 
   return ok({ stats: (rows as Array<Record<string, number>>)[0] });

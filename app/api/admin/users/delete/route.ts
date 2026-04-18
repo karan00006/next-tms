@@ -23,8 +23,8 @@ export async function POST(request: Request) {
     return badRequest("You cannot delete your own account");
   }
 
-  await pool.execute("DELETE FROM crud_app WHERE user_id = ?", [targetUserId]);
-  await pool.execute("DELETE FROM students WHERE id = ?", [targetUserId]);
+  await pool.execute("DELETE FROM tasks WHERE user_id = ?", [targetUserId]);
+  await pool.execute("DELETE FROM `user` WHERE id = ?", [targetUserId]);
 
   return ok({ message: "User deleted" });
 }

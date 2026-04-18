@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   if (user.isAdmin && Number.isInteger(targetUserId) && targetUserId > 0) {
     const [rows] = await pool.query(
-      "SELECT c.*, COALESCE(NULLIF(TRIM(s.name), ''), CONCAT('User ', c.user_id)) AS user_name FROM crud_app c LEFT JOIN students s ON s.id = c.user_id WHERE c.user_id = ? ORDER BY c.created_at DESC",
+      "SELECT c.*, COALESCE(NULLIF(TRIM(s.name), ''), CONCAT('User ', c.user_id)) AS user_name FROM tasks c LEFT JOIN `user` s ON s.id = c.user_id WHERE c.user_id = ? ORDER BY c.created_at DESC",
       [targetUserId],
     );
     return ok({ notes: rows as DbAdminNote[] });
@@ -22,12 +22,12 @@ export async function GET(request: Request) {
 
   if (user.isAdmin) {
     const [rows] = await pool.query(
-      "SELECT c.*, COALESCE(NULLIF(TRIM(s.name), ''), CONCAT('User ', c.user_id)) AS user_name FROM crud_app c LEFT JOIN students s ON s.id = c.user_id ORDER BY c.created_at DESC",
+      "SELECT c.*, COALESCE(NULLIF(TRIM(s.name), ''), CONCAT('User ', c.user_id)) AS user_name FROM tasks c LEFT JOIN `user` s ON s.id = c.user_id ORDER BY c.created_at DESC",
     );
     return ok({ notes: rows as DbAdminNote[] });
   }
 
-  const [rows] = await pool.query("SELECT * FROM crud_app WHERE user_id = ? ORDER BY created_at DESC", [user.userId]);
+  const [rows] = await pool.query("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC", [user.userId]);
   return ok({ notes: rows as DbNote[] });
 }
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   const { task, description, status } = parsed.data;
   await pool.execute(
-    "INSERT INTO crud_app (task, description, status, user_id) VALUES (?, ?, ?, ?)",
+    "INSERT INTO tasks (task, description, status, user_id) VALUES (?, ?, ?, ?)",
     [task, description, status, user.userId],
   );
 

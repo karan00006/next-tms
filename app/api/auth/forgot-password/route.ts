@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   const { email } = parsed.data;
-  const [rows] = await pool.query("SELECT * FROM students WHERE email = ? LIMIT 1", [email]);
+  const [rows] = await pool.query("SELECT * FROM `user` WHERE email = ? LIMIT 1", [email]);
   const users = rows as DbUser[];
   const user = users[0];
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
   await pool.execute(
-    "UPDATE students SET otp = ?, attemtps = 0, expiry = ? WHERE email = ?",
+    "UPDATE `user` SET otp = ?, attemtps = 0, expiry = ? WHERE email = ?",
     [hashedOtp, expiry, email],
   );
 
