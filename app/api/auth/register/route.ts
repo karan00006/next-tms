@@ -10,7 +10,7 @@ function registrationErrorMessage(code?: string) {
   if (code === "42P01") {
     return "User table not found. Create public.user or public.students in Supabase.";
   }
-  return "Internal server error";
+  return `Internal server error (db:${code || "unknown"})`;
 }
 
 export async function POST(request: Request) {
