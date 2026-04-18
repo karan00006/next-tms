@@ -1,7 +1,17 @@
 import bcrypt from "bcryptjs";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { getSupabaseAdminClient } from "@/lib/supabase-server";
 import { registerSchema } from "@/lib/validation";
 import { badRequest, ok, serverError } from "@/lib/api";
+
+function registrationErrorMessage(code?: string) {
+  if (code === "42501") {
+    return "Database policy blocked registration. Configure RLS policies or set SUPABASE_SERVICE_ROLE_KEY in Vercel.";
+  }
+  if (code === "42P01") {
+    return "User table not found. Create public.user or public.students in Supabase.";
+  }
+  return "Internal server error";
+}
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +26,7 @@ export async function POST(request: Request) {
     const isAdmin = configuredAdminCode && adminCode === configuredAdminCode ? 1 : 0;
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const supabase = await getSupabaseServerClient();
+    const supabase = getSupabaseAdminClient();
 
     const payload = {
       name,
@@ -41,15 +51,18 @@ export async function POST(request: Request) {
       if (postgresError.code === "23505") {
         return badRequest("This email is already registered");
       }
-      return serverError();
+      return serverError(registrationErrorMessage(postgresError.code));
     }
 
     return ok({ message: "Account created successfully" }, 201);
   } catch (error: unknown) {
-    const postgresError = error as { code?: string };
+    const postgresError = error as { code?: string; message?: string };
     if (postgresError.code === "23505") {
       return badRequest("This email is already registered");
     }
-    return serverError();
+    if (postgresError.message?.includes("Supabase environment variables are missing")) {
+      return serverError("Supabase env is missing in Vercel. Set URL and key variables.");
+    }
+    return serverError(registrationErrorMessage(postgresError.code));
   }
 }
