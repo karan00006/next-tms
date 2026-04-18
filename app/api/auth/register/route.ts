@@ -18,12 +18,23 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const supabase = await getSupabaseServerClient();
 
-    const { error } = await supabase.from("user").insert({
+    const payload = {
       name,
       email,
       password: hashedPassword,
       is_admin: isAdmin,
-    });
+    };
+
+    let { error } = await supabase.from("user").insert(payload);
+    const tableError = error as { code?: string } | null;
+    if (tableError?.code === "42P01") {
+      const fallbackPayload = {
+        ...payload,
+        isAdmin,
+      };
+      const fallbackResult = await supabase.from("students").insert(fallbackPayload);
+      error = fallbackResult.error;
+    }
 
     if (error) {
       const postgresError = error as { code?: string };

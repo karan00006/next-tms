@@ -16,13 +16,32 @@ export async function POST(request: Request) {
 
     const { email, password } = parsed.data;
     const supabase = await getSupabaseServerClient();
-    const { data: users, error } = await supabase.from("user").select("*").eq("email", email).limit(1);
+    const queryByEmail = async (table: "user" | "students") => {
+      return supabase.from(table).select("*").eq("email", email).limit(1);
+    };
+
+    let { data: users, error } = await queryByEmail("user");
+    const initialError = error as { code?: string } | null;
+    if (initialError?.code === "42P01") {
+      const fallbackResult = await queryByEmail("students");
+      users = fallbackResult.data;
+      error = fallbackResult.error;
+    }
+
     if (error) {
       return serverError();
     }
-    const user = ((users as DbUser[] | null) || [])[0];
 
-    if (!user) {
+    const rawUser = ((users as Array<DbUser & { isAdmin?: number }> | null) || [])[0];
+    const user = rawUser
+      ? {
+          ...rawUser,
+          is_admin: Number(rawUser.is_admin ?? rawUser.isAdmin ?? 0),
+          password: String(rawUser.password || ""),
+        }
+      : null;
+
+    if (!user || !user.password) {
       return unauthorized("Invalid email or password");
     }
 
