@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import { pool, type DbUser } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbUser } from "@/lib/types";
 import { sendOtpEmail } from "@/lib/mail";
 import { badRequest, ok } from "@/lib/api";
 import { forgotPasswordSchema } from "@/lib/validation";
@@ -12,9 +13,9 @@ export async function POST(request: Request) {
   }
 
   const { email } = parsed.data;
-  const [rows] = await pool.query("SELECT * FROM `user` WHERE email = ? LIMIT 1", [email]);
-  const users = rows as DbUser[];
-  const user = users[0];
+  const supabase = await getSupabaseServerClient();
+  const { data: users } = await supabase.from("user").select("*").eq("email", email).limit(1);
+  const user = ((users as DbUser[] | null) || [])[0];
 
   // Keep response generic to prevent account enumeration.
   if (!user) {
@@ -25,10 +26,7 @@ export async function POST(request: Request) {
   const hashedOtp = await bcrypt.hash(otp, 10);
   const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
-  await pool.execute(
-    "UPDATE `user` SET otp = ?, attemtps = 0, expiry = ? WHERE email = ?",
-    [hashedOtp, expiry, email],
-  );
+  await supabase.from("user").update({ otp: hashedOtp, attemtps: 0, expiry }).eq("email", email);
 
   await sendOtpEmail(email, otp);
 

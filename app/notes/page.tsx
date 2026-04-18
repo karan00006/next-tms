@@ -1,19 +1,23 @@
 import { TopBar } from "@/components/top-bar";
 import { requireUser } from "@/lib/guards";
-import { pool, type DbNote } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbNote } from "@/lib/types";
 import { NotesClient } from "./notes-client";
 
 export default async function NotesPage() {
   const user = await requireUser();
+  const supabase = await getSupabaseServerClient();
 
-  const [rows] = await pool.query("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC", [
-    user.userId,
-  ]);
+  const { data: rows } = await supabase
+    .from("tasks")
+    .select("ID, task, description, status, created_at, user_id, admin_message")
+    .eq("user_id", user.userId)
+    .order("created_at", { ascending: false });
 
   return (
     <>
       <TopBar userName={user.name} isAdmin={user.isAdmin} />
-      <NotesClient initialNotes={rows as DbNote[]} />
+      <NotesClient initialNotes={(rows || []) as DbNote[]} />
     </>
   );
 }

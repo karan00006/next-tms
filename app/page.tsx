@@ -8,8 +8,10 @@ type UserRow = {
 };
 
 type TaskRow = {
-  id: number;
-  title: string;
+  ID: number;
+  task: string;
+  description: string;
+  status: string;
 };
 
 async function getSupabase() {
@@ -60,13 +62,16 @@ async function deleteUser(formData: FormData) {
 async function createTask(formData: FormData) {
   "use server";
 
-  const title = String(formData.get("title") || "").trim();
-  if (!title) {
+  const task = String(formData.get("task") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  const status = String(formData.get("status") || "").trim() || "Pending";
+
+  if (!task || !description) {
     return;
   }
 
   const supabase = await getSupabase();
-  await supabase.from("tasks").insert({ title });
+  await supabase.from("tasks").insert({ task, description, status, user_id: 1 });
   revalidatePath("/");
 }
 
@@ -74,13 +79,14 @@ async function updateTask(formData: FormData) {
   "use server";
 
   const id = Number(formData.get("id"));
-  const title = String(formData.get("title") || "").trim();
-  if (!Number.isInteger(id) || id <= 0 || !title) {
+  const task = String(formData.get("task") || "").trim();
+  const status = String(formData.get("status") || "").trim() || "Pending";
+  if (!Number.isInteger(id) || id <= 0 || !task) {
     return;
   }
 
   const supabase = await getSupabase();
-  await supabase.from("tasks").update({ title }).eq("id", id);
+  await supabase.from("tasks").update({ task, status }).eq("ID", id);
   revalidatePath("/");
 }
 
@@ -93,7 +99,7 @@ async function deleteTask(formData: FormData) {
   }
 
   const supabase = await getSupabase();
-  await supabase.from("tasks").delete().eq("id", id);
+  await supabase.from("tasks").delete().eq("ID", id);
   revalidatePath("/");
 }
 
@@ -102,7 +108,7 @@ export default async function Page() {
 
   const [{ data: users, error: usersError }, { data: tasks, error: tasksError }] = await Promise.all([
     supabase.from("user").select("id, name").order("id", { ascending: false }),
-    supabase.from("tasks").select("id, title").order("id", { ascending: false }),
+    supabase.from("tasks").select("ID, task, description, status").order("ID", { ascending: false }),
   ]);
 
   return (
@@ -159,7 +165,9 @@ export default async function Page() {
         {tasksError ? <p className="form-msg form-msg-error">{tasksError.message}</p> : null}
 
         <form action={createTask} className="row-actions" style={{ marginTop: "0.8rem" }}>
-          <input name="title" placeholder="New task title" required maxLength={200} />
+          <input name="task" placeholder="Task" required maxLength={200} />
+          <input name="description" placeholder="Description" required maxLength={500} />
+          <input name="status" placeholder="Status" defaultValue="Pending" maxLength={50} />
           <button className="primary-button" type="submit">
             Add Task
           </button>
@@ -170,25 +178,28 @@ export default async function Page() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Title</th>
+                <th>Task</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {(tasks as TaskRow[] | null)?.map((task) => (
-                <tr key={task.id}>
-                  <td>{task.id}</td>
-                  <td>{task.title}</td>
+                <tr key={task.ID}>
+                  <td>{task.ID}</td>
+                  <td>{task.task}</td>
+                  <td>{task.status}</td>
                   <td>
                     <form action={updateTask} className="row-actions">
-                      <input type="hidden" name="id" value={String(task.id)} />
-                      <input name="title" defaultValue={task.title} maxLength={200} required />
+                      <input type="hidden" name="id" value={String(task.ID)} />
+                      <input name="task" defaultValue={task.task} maxLength={200} required />
+                      <input name="status" defaultValue={task.status} maxLength={50} required />
                       <button className="ghost-button" type="submit">
                         Update
                       </button>
                     </form>
                     <form action={deleteTask} className="row-actions">
-                      <input type="hidden" name="id" value={String(task.id)} />
+                      <input type="hidden" name="id" value={String(task.ID)} />
                       <button className="danger-button" type="submit">
                         Delete
                       </button>

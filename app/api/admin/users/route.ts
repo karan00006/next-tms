@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { forbidden, ok, unauthorized } from "@/lib/api";
-import { pool } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -11,9 +11,21 @@ export async function GET() {
     return forbidden();
   }
 
-  const [rows] = await pool.query(
-    "SELECT s.id, s.name, s.email, s.is_admin, COUNT(c.ID) AS notes_count FROM `user` s LEFT JOIN tasks c ON c.user_id = s.id GROUP BY s.id, s.name, s.email, s.is_admin ORDER BY s.id DESC",
-  );
+  const supabase = await getSupabaseServerClient();
+  const [{ data: users }, { data: tasks }] = await Promise.all([
+    supabase.from("user").select("id, name, email, is_admin").order("id", { ascending: false }),
+    supabase.from("tasks").select("user_id"),
+  ]);
+
+  const notesCountByUser = new Map<number, number>();
+  (tasks || []).forEach((task) => {
+    notesCountByUser.set(task.user_id, (notesCountByUser.get(task.user_id) || 0) + 1);
+  });
+
+  const rows = (users || []).map((row) => ({
+    ...row,
+    notes_count: notesCountByUser.get(row.id) || 0,
+  }));
 
   return ok({ users: rows });
 }

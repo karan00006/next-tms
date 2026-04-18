@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { getResetPayload } from "@/lib/auth";
-import { pool } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { badRequest, unauthorized } from "@/lib/api";
 import { resetPasswordSchema } from "@/lib/validation";
 
@@ -19,11 +19,12 @@ export async function POST(request: Request) {
 
   const { password } = parsed.data;
   const hashedPassword = await bcrypt.hash(password, 10);
+  const supabase = await getSupabaseServerClient();
 
-  await pool.execute(
-    "UPDATE `user` SET password = ?, otp = NULL, expiry = NULL, attemtps = 0 WHERE email = ?",
-    [hashedPassword, resetPayload.email],
-  );
+  await supabase
+    .from("user")
+    .update({ password: hashedPassword, otp: null, expiry: null, attemtps: 0 })
+    .eq("email", resetPayload.email);
 
   const response = NextResponse.json({ message: "Password updated" });
   response.cookies.set({

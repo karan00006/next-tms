@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { badRequest, forbidden, ok, unauthorized } from "@/lib/api";
-import { pool } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { addCommentSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
   }
 
   const { id, message } = parsed.data;
-  await pool.execute("UPDATE tasks SET admin_message = ? WHERE ID = ?", [message, id]);
+  const supabase = await getSupabaseServerClient();
+  await supabase.from("tasks").update({ admin_message: message }).eq("ID", id);
 
   return ok({ message: "Comment saved" });
 }

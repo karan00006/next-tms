@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { createAuthToken } from "@/lib/auth";
-import { pool, type DbUser } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbUser } from "@/lib/types";
 import { loginSchema } from "@/lib/validation";
 import { badRequest, unauthorized } from "@/lib/api";
 
@@ -13,9 +14,9 @@ export async function POST(request: Request) {
   }
 
   const { email, password } = parsed.data;
-  const [rows] = await pool.query("SELECT * FROM `user` WHERE email = ? LIMIT 1", [email]);
-  const users = rows as DbUser[];
-  const user = users[0];
+  const supabase = await getSupabaseServerClient();
+  const { data: users } = await supabase.from("user").select("*").eq("email", email).limit(1);
+  const user = ((users as DbUser[] | null) || [])[0];
 
   if (!user) {
     return unauthorized("Invalid email or password");

@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { createResetToken } from "@/lib/auth";
-import { pool, type DbUser } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbUser } from "@/lib/types";
 import { badRequest } from "@/lib/api";
 import { verifyOtpSchema } from "@/lib/validation";
 
@@ -13,9 +14,9 @@ export async function POST(request: Request) {
   }
 
   const { email, otp } = parsed.data;
-  const [rows] = await pool.query("SELECT * FROM `user` WHERE email = ? LIMIT 1", [email]);
-  const users = rows as DbUser[];
-  const user = users[0];
+  const supabase = await getSupabaseServerClient();
+  const { data: users } = await supabase.from("user").select("*").eq("email", email).limit(1);
+  const user = ((users as DbUser[] | null) || [])[0];
 
   if (!user || !user.otp || !user.expiry) {
     return badRequest("Invalid OTP");
@@ -32,11 +33,11 @@ export async function POST(request: Request) {
 
   const isOtpValid = await bcrypt.compare(otp, user.otp);
   if (!isOtpValid) {
-    await pool.execute("UPDATE `user` SET attemtps = attemtps + 1 WHERE email = ?", [email]);
+    await supabase.from("user").update({ attemtps: attempts + 1 }).eq("email", email);
     return badRequest("Invalid OTP");
   }
 
-  await pool.execute("UPDATE `user` SET attemtps = 0 WHERE email = ?", [email]);
+  await supabase.from("user").update({ attemtps: 0 }).eq("email", email);
 
   const resetToken = await createResetToken({ email });
   const response = NextResponse.json({ message: "OTP verified" });

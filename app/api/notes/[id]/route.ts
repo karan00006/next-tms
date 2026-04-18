@@ -1,13 +1,19 @@
 import { getCurrentUser } from "@/lib/auth";
 import { badRequest, forbidden, ok, unauthorized } from "@/lib/api";
 import { updateNoteSchema } from "@/lib/validation";
-import { pool, type DbNote } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbNote } from "@/lib/types";
 
 type Params = { params: Promise<{ id: string }> };
 
 async function getNote(id: number) {
-  const [rows] = await pool.query("SELECT * FROM tasks WHERE ID = ? LIMIT 1", [id]);
-  return (rows as DbNote[])[0] || null;
+  const supabase = await getSupabaseServerClient();
+  const { data } = await supabase
+    .from("tasks")
+    .select("ID, task, description, status, created_at, user_id, admin_message")
+    .eq("ID", id)
+    .limit(1);
+  return ((data as DbNote[] | null) || [])[0] || null;
 }
 
 export async function GET(_: Request, { params }: Params) {
@@ -62,12 +68,8 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const { task, description, status } = parsed.data;
-  await pool.execute("UPDATE tasks SET task = ?, description = ?, status = ? WHERE ID = ?", [
-    task,
-    description,
-    status,
-    noteId,
-  ]);
+  const supabase = await getSupabaseServerClient();
+  await supabase.from("tasks").update({ task, description, status }).eq("ID", noteId);
 
   return ok({ message: "Note updated" });
 }
@@ -93,6 +95,7 @@ export async function DELETE(_: Request, { params }: Params) {
     return forbidden();
   }
 
-  await pool.execute("DELETE FROM tasks WHERE ID = ?", [noteId]);
+  const supabase = await getSupabaseServerClient();
+  await supabase.from("tasks").delete().eq("ID", noteId);
   return ok({ message: "Note deleted" });
 }

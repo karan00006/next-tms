@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TopBar } from "@/components/top-bar";
 import { requireUser } from "@/lib/guards";
-import { pool, type DbNote } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { type DbNote } from "@/lib/types";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -15,8 +16,13 @@ export default async function NoteDetailPage({ params }: Props) {
     notFound();
   }
 
-  const [rows] = await pool.query("SELECT * FROM tasks WHERE ID = ? LIMIT 1", [noteId]);
-  const note = (rows as DbNote[])[0];
+  const supabase = await getSupabaseServerClient();
+  const { data: rows } = await supabase
+    .from("tasks")
+    .select("ID, task, description, status, created_at, user_id, admin_message")
+    .eq("ID", noteId)
+    .limit(1);
+  const note = ((rows as DbNote[] | null) || [])[0];
 
   if (!note) {
     notFound();

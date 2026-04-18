@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { forbidden, ok, unauthorized } from "@/lib/api";
-import { pool } from "@/lib/db";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -11,9 +11,18 @@ export async function GET() {
     return forbidden();
   }
 
-  const [rows] = await pool.query(
-    "SELECT (SELECT COUNT(*) FROM tasks) AS total_notes, (SELECT COUNT(*) FROM `user`) AS total_users, (SELECT COUNT(*) FROM `user` WHERE is_admin = 1) AS total_admins",
-  );
+  const supabase = await getSupabaseServerClient();
+  const [{ count: totalNotes }, { count: totalUsers }, { count: totalAdmins }] = await Promise.all([
+    supabase.from("tasks").select("ID", { count: "exact", head: true }),
+    supabase.from("user").select("id", { count: "exact", head: true }),
+    supabase.from("user").select("id", { count: "exact", head: true }).eq("is_admin", 1),
+  ]);
 
-  return ok({ stats: (rows as Array<Record<string, number>>)[0] });
+  return ok({
+    stats: {
+      total_notes: totalNotes || 0,
+      total_users: totalUsers || 0,
+      total_admins: totalAdmins || 0,
+    },
+  });
 }
